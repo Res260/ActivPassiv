@@ -47,14 +47,23 @@ class ActivPassiv:
 
         portfolio_data = self.get(f"/portfolioGroups/{portfolio_id}/info").json()
 
-        self.log.info(f"Complete Portfolio Data: {json.dumps(portfolio_data)}")
+        self.log.debug(f"Complete Portfolio Data: {json.dumps(portfolio_data)}")
 
         calculated_trades: list = portfolio_data["calculated_trades"]["trades"]
+        calculated_trade_id: str = portfolio_data["calculated_trades"]["id"]
 
         if len(calculated_trades) == 0:
             self.log.info("There are currently no trade possible to do to allocate your money.")
         else:
-            self.log.info(f"There are {len(calculated_trades)} trades possible to allocate your money: {calculated_trades}")
+            self.log.info(f"There are {len(calculated_trades)} trades possible to allocate your money.")
+            self.log.debug({json.dumps(calculated_trades)})
+
+            for trade in calculated_trades:
+                self.log.info(f"{trade['action']} {trade['units']} {trade['universal_symbol']['symbol']}. Total: {trade['universal_symbol']['currency']['code']} {trade['price']}")
+
+            self.log.info(f"Executing calculated trade {calculated_trade_id} to rebalance portfolio...")
+            response = self.post(f"/portfolioGroups/{portfolio_id}/calculatedTrades/{calculated_trade_id}/placeOrders")
+            self.log.debug(f"{response} {response.text}")
 
         self.log.info("Exiting")
 
@@ -79,7 +88,7 @@ class ActivPassiv:
         """
         return self.request("GET", uri)
 
-    def post(self, uri: str, data: dict) -> requests.Response:
+    def post(self, uri: str, data: dict={}) -> requests.Response:
         """
         Perform a GET request to the Passiv API.
         :param data: Dictionary representing the JSON payload to send.
