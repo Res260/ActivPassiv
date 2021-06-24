@@ -62,8 +62,11 @@ class ActivPassiv:
                 self.log.info(f"{trade['action']} {trade['units']} {trade['universal_symbol']['symbol']}. Total: {trade['universal_symbol']['currency']['code']} {trade['price']}")
 
             self.log.info(f"Executing calculated trade {calculated_trade_id} to rebalance portfolio...")
-            response = self.post(f"/portfolioGroups/{portfolio_id}/calculatedTrades/{calculated_trade_id}/placeOrders")
+            response = self.post(f"/portfolioGroups/{portfolio_id}/calculatedTrades/{calculated_trade_id}/placeOrders", data={})
             self.log.debug(f"{response} {response.text}")
+            for trade in response.json():
+                self.log.info(f"{trade.get('state')} {trade.get('action')}: {trade.get('filled_units')}x{trade.get('universal_symbol', {}).get('symbol')} "
+                              f"({trade.get('price')} {trade.get('universal_symbol', {}).get('currency', {}).get('code')}). Commission: {trade.get('commissions')}")
 
         self.log.info("Exiting")
 
