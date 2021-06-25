@@ -62,7 +62,7 @@ class ActivPassiv:
                 self.log.info(f"{trade['action']} {trade['units']} {trade['universal_symbol']['symbol']}. Total: {trade['universal_symbol']['currency']['code']} {trade['price']}")
 
             self.log.info(f"Executing calculated trade {calculated_trade_id} to rebalance portfolio...")
-            response = self.post(f"/portfolioGroups/{portfolio_id}/calculatedTrades/{calculated_trade_id}/placeOrders", data={})
+            response = self.post(f"/portfolioGroups/{portfolio_id}/calculatedtrades/{calculated_trade_id}/placeOrders", data={})
             self.log.debug(f"{response} {response.text}")
             for trade in response.json():
                 self.log.info(f"{trade.get('state')} {trade.get('action')}: {trade.get('filled_units')}x{trade.get('universal_symbol', {}).get('symbol')} "
@@ -97,7 +97,7 @@ class ActivPassiv:
         :param data: Dictionary representing the JSON payload to send.
         :param uri: The path to fetch (ex. /accounts)
         """
-        return self.request("GET", uri, json=data)
+        return self.request("POST", uri, json=data)
 
     def request(self, method: str, uri: str, **kwargs) -> requests.Response:
         """
