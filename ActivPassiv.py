@@ -43,46 +43,41 @@ class ActivPassiv:
         self.verify_env_file()
         self.test_api_connectivity()
 
-        portfolio_id = self.get_portfolio_id()
+        portfolio_ids: list = self.get_portfolio_ids()
 
-        portfolio_data = self.get(f"/portfolioGroups/{portfolio_id}/info").json()
+        for portfolio_id in portfolio_ids:
+          portfolio_data = self.get(f"/portfolioGroups/{portfolio_id}/info").json()
 
-        self.log.debug(f"Complete Portfolio Data: {json.dumps(portfolio_data)}")
+          self.log.info(f"Portfolio Name: {portfolio_data['accounts'][0]['name']}")
+          self.log.debug(f"Complete Portfolio Data: {json.dumps(portfolio_data)}")
 
-        calculated_trades: list = portfolio_data["calculated_trades"]["trades"]
-        calculated_trade_id: str = portfolio_data["calculated_trades"]["id"]
+          calculated_trades: list = portfolio_data["calculated_trades"]["trades"]
+          calculated_trade_id: str = portfolio_data["calculated_trades"]["id"]
 
-        if len(calculated_trades) == 0:
-            self.log.info("There are currently no trade possible to do to allocate your money.")
-        else:
-            self.log.info(f"There are {len(calculated_trades)} trades possible to allocate your money.")
-            self.log.debug({json.dumps(calculated_trades)})
+          if len(calculated_trades) == 0:
+              self.log.info("There are currently no trade possible to do to allocate your money.")
+          else:
+              self.log.info(f"There are {len(calculated_trades)} trades possible to allocate your money.")
+              self.log.debug({json.dumps(calculated_trades)})
 
-            for trade in calculated_trades:
-                self.log.info(f"{trade['action']} {trade['units']} {trade['universal_symbol']['symbol']}. Total: {trade['universal_symbol']['currency']['code']} {trade['price']}")
+              for trade in calculated_trades:
+                  self.log.info(f"{trade['action']} {trade['units']} {trade['universal_symbol']['symbol']}. Total: {trade['universal_symbol']['currency']['code']} {trade['price']}")
 
-            self.log.info(f"Executing calculated trade {calculated_trade_id} to rebalance portfolio...")
-            response = self.post(f"/portfolioGroups/{portfolio_id}/calculatedtrades/{calculated_trade_id}/placeOrders", data={})
-            self.log.debug(f"{response} {response.text}")
-            for trade in response.json():
-                self.log.info(f"{trade.get('state')} {trade.get('action')}: {trade.get('filled_units')}x{trade.get('universal_symbol', {}).get('symbol')} "
-                              f"({trade.get('price')} {trade.get('universal_symbol', {}).get('currency', {}).get('code')}). Commission: {trade.get('commissions')}")
+              self.log.info(f"Executing calculated trade {calculated_trade_id} to rebalance portfolio...")
+              response = self.post(f"/portfolioGroups/{portfolio_id}/calculatedtrades/{calculated_trade_id}/placeOrders", data={})
+              self.log.debug(f"{response} {response.text}")
+              for trade in response.json():
+                  self.log.info(f"{trade.get('state')} {trade.get('action')}: {trade.get('filled_units')}x{trade.get('universal_symbol', {}).get('symbol')} "
+                                f"({trade.get('price')} {trade.get('universal_symbol', {}).get('currency', {}).get('code')}). Commission: {trade.get('commissions')}")
 
         self.log.info("Exiting")
 
-    def get_portfolio_id(self) -> str:
+    def get_portfolio_ids(self) -> list:
         """
-        :return: The ID of the portfolio to buy stocks from.
+        :return: The IDs of the portfolios to buy stocks from.
         """
-
         portfolio_groups: dict = self.get("/portfolioGroups").json()
-        portfolio_id = None
-        for portfolio in portfolio_groups:
-            if portfolio.get("name") == self.portfolio_name:
-                portfolio_id = portfolio.get("id")
-        if not portfolio_id:
-            self.log.critical(f"Could not find portfolio {self.portfolio_name}. List of portfolios: {portfolio_groups}")
-        return portfolio_id
+        return [portfolio.get("id") for portfolio in portfolio_groups]
 
     def get(self, uri: str) -> requests.Response:
         """
@@ -142,10 +137,4 @@ class ActivPassiv:
             self.log.critical(
                 "Passiv API key not found. Make sure to have a .env file in the working directory and that it "
                 "contains passiv_api_key=<apikey> .")
-            exit(1)
-
-        if not self.portfolio_name:
-            self.log.critical(
-                "Portfolio name not found. Set the portfolio name you want to automatically allocate in the .env file. "
-                "portfolio_name=\"mygreatportfolio\" .")
             exit(1)
